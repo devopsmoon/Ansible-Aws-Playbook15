@@ -1,0 +1,188 @@
+- name: creating the security group for vprofile-stack
+  hosts: localhost
+  become: true
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: improting the variable file1
+      include_vars: vars/vpc_setup
+
+    - name: importing the variable files2
+      include_vars: vars/vpc-output.var
+
+    - name: importing the variable file3
+      include_vars: vars/bastion_setup
+
+    - name: importing the variable file4
+      include_vars: vars/vprofile_setup
+
+    - name: creating the ec2 key pair
+      ec2_key:
+        name: login-key
+        region: "{{region}}"
+        state: present
+      register: key_out
+
+    - debug:
+        var: key_out
+
+    - name: saving the aws key
+      copy:
+        content: "{{key_out.key.private_key}}"
+        dest: "./login-key.pem"
+        mode: 0600
+      when: key_out.changed
+
+    - name: security group of load balancer
+      ec2_group:
+        name: vprofile-elb-sg
+        description: allow port 80  from any where
+        region: "{{region}}"
+        vpc_id: "{{vpcoutid}}"
+        state: present
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+        tags:
+          Name: vprofile-elb
+      register: vproelbsg_out
+
+    - name: security group of vprofile-stack
+      ec2_group:
+        name: vprofile-stack
+        description: allow port 80 from any where
+        region: "{{region}}"
+        vpc_id: "{{vpcoutid}}"
+        state: present
+        purge_rules: false
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            group_id: "{{vproelbsg_out.group_id}}"
+
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            group_id: "{{bastionsgid}}"
+        tags:
+          Name: vprofile-stack
+      register: vprostack_out
+
+    - name: creating the security group allow from its own traffics
+      ec2_group:
+        name: vproile-stack
+        region: "{{region}}"
+        vpc_id: "{{vpcoutid}}"
+        state: present
+        purge_rules: no
+        rules:
+          - proto: all
+            group_id: "{{vprostack_out.group_id}}"
+
+    - name: creating the nginx server
+      ec2:
+        key_name: login-key
+        region: "{{region}}"
+        instance_type: t2.micro
+        image: "{{nginx_ami"
+        wait: yes
+        wait_timeout: 200
+        instance_tags:
+          Name: nginx-server
+          project: vprofile
+          owner: devopsteam
+        exact_count: 1
+        count_tag:
+          Name: nginx-server
+          project: vprofile
+          owner: devopsteam
+        group_id: "{{vprostack_out.group_id}}"
+        vpc_subnet_id: "{{prisub1id}}"
+      register: nginxsrv_out
+
+    - name: creating the tomcat server
+      ec2:
+        key_name: login-key
+        region: "{{region}}"
+        instance_type: t2.micro
+        image: "{{tomcat_ami}}"
+        wait: yes
+        wait_timeout: 200
+        instance_tags:
+          Name: tomcat-server
+          project: vprofile
+          owner: devopsteam
+        exact_count: 1
+        count_tag:
+          Name: tomat-server
+          project: vprofile
+          owner: devopsteam
+        group_id: "{{vprostack_out.group_id}}"
+        vpc_subnet_id: "{{prisub1id}}"
+      register: tomcatsrv_out
+
+    - name: creating the rabbitmq server
+      ec2:
+        key_name: login-key
+        region: "{{region}}"
+        instance_type: t2.micro
+        image: "{{rabbitmq_ami}}"
+        wait: yes
+        wait_timeout: 200
+        instance_tags:
+          Name: rabbitmq-server
+          project: vprofile
+          owner: devopsteam
+        exact_count: 1
+        count_tag:
+          Name: rabbitmq-server
+          project: vprofile
+          owner: devopsteam
+        vpc_subnet_id: "{{prisub1id}}"
+        group_id: "{{vprostack_out.group_id}}"
+      register: rabbitmqsrv_out
+
+    - name: creating the memcached server
+      ec2:
+        key_name: login-key
+        region: "{{region}}"
+        instance_type: t2.micro
+        image: "{{memcache_ami}}"
+        wait: yes
+        wait_timeout: 200
+        instance_tags:
+          Name: memcache-server
+          project: vprofile
+          owner: devopsteam
+        exact_count: 1
+        count_tag:
+          Name: memcache-server
+          project: vprofile
+          owner: devopsteam
+        group_id:   "{{vprostack_out.group_id}}"
+        vpc_subnet_id: "{{prisub1id}}"
+      register: memcachesrv_out
+
+    - name: creating the mysql server
+      ec2:
+        key_name: login-key
+        region: "{{region}}"
+        instance_type: t2.micro
+        image: "{{mysql_ami}}"
+        wait: yes
+        wait_timeout: 200
+        instance_tags:
+          Name: mysql-server
+          project: vprofile
+          owner: devopsteam
+        exact_count: 1
+        count_tag:
+          Name: mysql-server
+          project: vprofile
+          owner: devopsteam
+        group_id: "{{vprostack_out.group_id}}"
+        vpc_subnet_id: "{{prisub1id}}"
+      register: msyqlsrv_out

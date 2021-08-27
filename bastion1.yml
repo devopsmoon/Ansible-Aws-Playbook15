@@ -59,5 +59,12 @@
         vpc_subnet_id: "{{pubsub1id}}"
       register: bastionhost_out
 
+    - name: inserting or updating the file contents
+      blockinfile:
+        path: vars/vpc-output.var
+        backup: yes
+        block: |
+          bastionsgid: {{bastionsg_out.group_id}}
+
 
 
