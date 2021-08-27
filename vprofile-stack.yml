@@ -88,7 +88,7 @@
         key_name: login-key
         region: "{{region}}"
         instance_type: t2.micro
-        image: "{{nginx_ami"
+        image: "{{nginx_ami}}"
         wait: yes
         wait_timeout: 200
         instance_tags:
