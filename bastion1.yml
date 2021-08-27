@@ -27,6 +27,7 @@
         description: allow port 22 from bastion security group
         region: "{{region}}"
         state: present
+        vpc_id: "{{vpcoutid}}"
         rules:
           - proto: tcp
             from_port: 22
@@ -40,6 +41,8 @@
         region: "{{region}}"
         instance_type: t2.micro
         image: "{{bastion_ami}}"
+        wait: yes
+        wait_timeout: 300
         instance_tags:
           Name: bastion-host
           project: vprofile
@@ -50,7 +53,8 @@
           project: vprofile
           owner: devopsteam
         group_id: "{{bastionsg_out.group_id}}"
-        vpc_subnet_id: "{{pubsub1_out.subnet.id}}"
+        vpc_subnet_id: "{{pubsub1id}}"
       register: bastionhost_out
+
 
 
