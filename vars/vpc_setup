@@ -2,7 +2,7 @@
 vpc_name: "vprofile-vpc"
 
 #creating the vpc region
-region: "{{region}}"
+region: "ap-south-1"
 
 #creating the vpc range
 vpccidr: '172.20.0.0/16'
