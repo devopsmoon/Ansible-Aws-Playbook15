@@ -74,6 +74,7 @@
     - name: creating the security group allow from its own traffics
       ec2_group:
         name: vproile-stack
+        description: allow all traffic from it own
         region: "{{region}}"
         vpc_id: "{{vpcoutid}}"
         state: present
